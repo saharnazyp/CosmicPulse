@@ -77,10 +77,7 @@ def main():
 
     fresh = [item for item in news if item_key(item) not in published]
     log.info("%d candidates remain after deduplication.", len(fresh))
-    if not fresh and not social:
-        log.info("No new material today. Nothing will be published.")
-        return
-
+    # Educational content is still produced on quiet news days.
     package = create_editorial_package(fresh[:80], social)
     news_posts = package.get("news_posts", [])
     education_posts = package.get("educational_posts", [])
@@ -91,7 +88,9 @@ def main():
     # Publish first. Only mark source items as published after the full package succeeds.
     publish_package(package, len(fresh), len(social))
     state.setdefault("published", [])
-    state["published"].extend(item_key(item) for item in fresh)
+    selected_urls = {post.get("source_url") for post in news_posts if post.get("source_url")}
+    selected_items = [item for item in fresh if item.get("url") in selected_urls]
+    state["published"].extend(item_key(item) for item in selected_items)
     save_state(state)
     persist_state()
     log.info(
