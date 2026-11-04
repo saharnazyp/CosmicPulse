@@ -52,6 +52,12 @@ def _source_line(name, url):
     return "\n\n⚠️ لینک منبع در داده‌های ورودی موجود نبود."
 
 def publish_news(post, index):
+    image_url = post.get("image_url") or ""
+    if image_url.startswith("https://"):
+        try:
+            _send("sendPhoto", {"chat_id": TELEGRAM_CHAT_ID, "photo": image_url})
+        except Exception as exc:
+            log.warning("Could not send feed image; continuing with text: %s", exc)
     text = (
         f"🌌 <b>نبض کیهان | خبر {index}</b>\n"
         f"📂 {esc(post.get('category'))}\n\n"
