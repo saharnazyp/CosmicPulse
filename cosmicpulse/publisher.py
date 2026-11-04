@@ -120,9 +120,9 @@ def _watchlist_text(item):
 
 def publish_package(package, news_count, social_count):
     header = (
-        "🌌 <b>CosmicPulse 2.0 | نبض کیهان</b>\\n"
-        "🛰 <b>گزارش روزانه تحریریه</b>\\n"
-        f"📡 {news_count} خبر و {social_count} سیگنال اجتماعی بررسی شد.\\n\\n"
+        "🌌 <b>CosmicPulse 2.0 | نبض کیهان</b>\n"
+        "🛰 <b>گزارش روزانه تحریریه</b>\n"
+        f"📡 {news_count} خبر و {social_count} سیگنال اجتماعی بررسی شد.\n\n"
         + esc(package.get("editor_note") or "گزیده امروز دنیای علم و فناوری")
     )
     send_text(header)
@@ -134,5 +134,5 @@ def publish_package(package, news_count, social_count):
     watch_items = [_watchlist_text(item) for item in watch]
     watch_items = [item for item in watch_items if item][:6]
     if watch_items:
-        send_text("🔭 <b>در رصد روزهای آینده</b>\\n" + esc("\\n".join("• " + item for item in watch_items)))
+        send_text("🔭 <b>در رصد روزهای آینده</b>\n" + esc("\n".join("• " + item for item in watch_items)))
     send_text("✨ <i>CosmicPulse | کنجکاوی، تا بی‌نهایت.</i>")
