@@ -1,29 +1,39 @@
-Skip to content
-saharnazyp
-CosmicPulse
-Repository navigation
-Code
-Issues
-Pull requests
-Agents
-Actions
-Projects
-Wiki
-Security and quality
-Insights
-Settings
-Copilot navigation
-Sessions
-Filter sessions
-is:open author:@me
-Active
-0
- (0)
-Completed
-0
- (0)
-No sessions match your filters
-Try adjusting your search or filters.
+name: Cosmic Pulse Daily Editorial Briefing
 
-Copilot uses AI. Check for mistakes.
+on:
+  workflow_dispatch:
+  schedule:
+    # 05:30 UTC = 09:00 Tehran time (UTC+3:30)
+    - cron: "30 5 * * *"
 
+permissions:
+  contents: read
+
+jobs:
+  daily-briefing:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Generate and send briefing
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GEMINI_MODEL: gemini-2.5-flash
+          MAX_AGE_HOURS: "72"
+          MAX_CANDIDATES: "70"
+        run: python main.py
