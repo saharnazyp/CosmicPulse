@@ -45,6 +45,7 @@ jobs:
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_MODEL: gemini-3.8-flash
+          GEMINI_FALLBACK_MODELS: gemini-3.7-flash,gemini-3.6-flash
           MAX_AGE_HOURS: "48"
           MAX_ITEMS_PER_FEED: "20"
           MAX_CANDIDATES: "80"
