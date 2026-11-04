@@ -21,11 +21,7 @@ def persist_state():
     if not os.getenv("GITHUB_ACTIONS"):
         log.info("Not running in GitHub Actions; state remains local.")
         return
-    token = os.getenv("GITHUB_TOKEN", "")
-    if not token:
-        log.warning("GITHUB_TOKEN missing; deduplication state will not persist.")
-        return
-
+    # actions/checkout persists the built-in token in Git credentials.
     subprocess.run(["git", "config", "user.name", "github-actions[bot]"], check=True)
     subprocess.run(
         ["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"],
@@ -50,8 +46,6 @@ def persist_state():
     ref = os.getenv("GITHUB_REF_NAME", "main")
     if not repo:
         raise RuntimeError("GITHUB_REPOSITORY is missing; cannot persist state.")
-    push_url = f"https://x-access-token:{token}@github.com/{repo}.git"
-    subprocess.run(["git", "remote", "set-url", "origin", push_url], check=True)
     subprocess.run(["git", "push", "origin", f"HEAD:{ref}"], check=True)
     log.info("Publication state committed to branch %s.", ref)
 
