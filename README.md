@@ -1,59 +1,53 @@
-# Cosmic Pulse | نبض کیهان — Gemini Edition
+# CosmicPulse 2.0 | نبض کیهان
 
-A scheduled Persian-language editorial briefing bot for a private Telegram group.
+A Persian-language science, astronomy, space and technology editorial autopilot for Telegram.
 
-## What this MVP does
-- Collects recent items from selected science, space, technology and AI RSS feeds.
-- Collects a limited set of public Reddit hot-post signals when Reddit allows access.
-- Sends the collected source data to Google Gemini for editorial triage and content drafting.
-- Produces Persian topic summaries, hooks, short-form video scripts, voiceover text, English subtitles, and English image/video prompts.
-- Posts the report to a Telegram group.
-- Runs daily at 09:00 Asia/Tehran using GitHub Actions.
+## What it does
+- Collects recent items from a configurable set of RSS feeds.
+- Optionally reads public Reddit posts as conversation signals; Reddit failures never stop the pipeline.
+- Filters already-published source URLs using a small JSON state file committed back to the repository after successful publication.
+- Uses Gemini to prepare up to four news posts and one educational/science-fact post in Persian.
+- Keeps source URLs tied to the exact feed items collected. Generated or unsupported URLs are discarded.
+- Publishes each post to Telegram, including editorial notes, voiceover copy, English subtitle lines and visual prompts.
+- Runs daily at 09:00 Tehran time (05:30 UTC), and can also be started manually from Actions.
 
-## 1. Create the GitHub repository
-Create a repository named `cosmic-pulse` and upload all files from this project, preserving folder structure.
+## Required GitHub Actions secrets
+In **Settings → Secrets and variables → Actions**, configure:
 
-## 2. Add GitHub Actions secrets
-Go to **Repository → Settings → Secrets and variables → Actions → New repository secret**.
+- `GEMINI_API_KEY`: Google AI Studio API key. A consumer Gemini subscription does not automatically include Gemini API quota.
+- `TELEGRAM_BOT_TOKEN`: token from BotFather.
+- `TELEGRAM_CHAT_ID`: destination group or channel ID. The bot must be allowed to post there.
 
-Add:
-- `GEMINI_API_KEY` — API key created in Google AI Studio.
-- `TELEGRAM_BOT_TOKEN` — token from BotFather.
-- `TELEGRAM_CHAT_ID` — numeric ID of the Telegram group, usually a negative number starting with `-100`.
+The workflow uses the built-in `GITHUB_TOKEN` to persist the publication state. In **Settings → Actions → General → Workflow permissions**, allow read and write permissions if repository policy requires it.
 
-Do not paste keys into source files, issues, commits, or chats.
+Never place credentials in source files or commit them.
 
-## 3. Find the Telegram group ID
-1. Add the bot to your group and allow it to send messages. Making it an administrator is a straightforward option.
-2. Send a normal message in the group after the bot has been added.
-3. Open this address in your browser, replacing `TOKEN` with your bot token:
-   `https://api.telegram.org/botTOKEN/getUpdates`
-4. In the JSON response, find `message` → `chat` → `id`.
-5. Copy that numeric ID into the GitHub secret `TELEGRAM_CHAT_ID`.
+## Run a test
+1. Open **Actions → CosmicPulse 2.0 Daily Autopilot**.
+2. Select **Run workflow**.
+3. Inspect the job logs and confirm the messages arrived in the Telegram destination.
+4. If the workflow cannot commit `state/state.json`, check workflow write permissions.
 
-Keep the bot token private. If it is exposed, revoke/regenerate it through BotFather. If `getUpdates` is empty, send another new group message and refresh. You may need to disable bot privacy using BotFather `/setprivacy` or make the bot an administrator so group messages appear in updates.
+## Configuration
+Edit `config/feeds.json` to add or remove RSS sources. Each feed needs a descriptive `name` and an HTTPS `url`.
 
-## 4. Run a test
-1. Open the repository's **Actions** tab.
-2. Select **Cosmic Pulse Daily Editorial Briefing**.
-3. Click **Run workflow**.
-4. Wait for the job to finish and check the Telegram group.
-5. If it fails, open the workflow run and inspect the step logs. Never share logs containing secrets.
+Environment variables:
+- `GEMINI_MODEL`: defaults to `gemini-3.8-flash`; change it to a model actually available to your API project.
+- `MAX_AGE_HOURS`: feed recency window, default 48.
+- `MAX_NEWS_POSTS`: maximum news posts per run, default 4.
+- `MAX_EDUCATIONAL_POSTS`: maximum educational posts per run, default 1.
 
-## Schedule
-The workflow runs at 05:30 UTC, equivalent to 09:00 in Tehran (UTC+3:30). GitHub scheduled workflows can start a little later during periods of high load.
+## Reliability and editorial safeguards
+- Feed failures and Reddit 403/429 responses are logged and skipped.
+- Gemini retries temporary 408/429/5xx errors with exponential backoff.
+- JSON output is validated before publishing.
+- Only source URLs that match collected feed items are retained.
+- Source links and evidence status are included in news posts.
+- The model's confidence is editorial triage, not scientific peer review. Autopilot publication still requires occasional human review of quality and source coverage.
 
-## Change Gemini model
-The workflow currently sets `GEMINI_MODEL: gemini-2.5-flash`. If that model is unavailable for your API project, replace it with a model currently listed as available in your Google AI Studio/API account.
-
-## Important limitations
-- Gemini API billing/quotas are separate from a consumer Gemini subscription. Check the API project's quota and billing in Google AI Studio/Google Cloud.
-- RSS coverage depends on each publisher's feed and availability.
-- Reddit access is best-effort and can be throttled.
-- This MVP does not have unrestricted Instagram, TikTok, YouTube, or X analytics access. It does not claim comprehensive platform-wide trend detection.
-- Competitor analysis is only a placeholder until real competitor accounts and accessible data sources are configured.
-- Scientific credibility scores are model-assisted editorial triage, not peer review. Verify important claims and original research before publication.
-- The bot posts drafts to Telegram only. It does not automatically publish to Instagram.
-
-## Add competitors
-Edit `config/competitors.json` and replace the example entry with real public competitor accounts and URLs. The current MVP passes this list to Gemini as context; it does not scrape private account analytics.
+## Current boundaries
+- This version publishes text-first Telegram posts. It does not generate image files, publish to Instagram, or provide authenticated social analytics.
+- Visual prompts are included for later image/video production; they are not rendered automatically.
+- Reddit is best-effort and is not treated as scientific evidence.
+- The JSON publication ledger is suitable for a single scheduled workflow. Do not run multiple independent publishers against the same state file.
+- If Telegram partially accepts a multi-message package and a later message fails, the next run may repeat part of that package. A future release can add per-message delivery receipts.
