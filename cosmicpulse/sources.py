@@ -15,7 +15,7 @@ SESSION.headers.update({"User-Agent": "CosmicPulse/2.0 (+https://github.com/saha
 
 def clean(value):
     value = re.sub(r"<[^>]*>", " ", value or "")
-    return re.sub(r"\\s+", " ", html.unescape(value)).strip()
+    return re.sub(r"\s+", " ", html.unescape(value)).strip()
 
 def read_feeds():
     with open(FEEDS_PATH, "r", encoding="utf-8") as f:
