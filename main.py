@@ -212,7 +212,47 @@ def load_json(path, default):
             return json.load(file)
     except Exception:
         return default
+def generate_content_with_retry(**kwargs):
+    max_attempts = 5
 
+    for attempt in range(1, max_attempts + 1):
+        try:
+            log.info(
+                "Sending request to Gemini. Attempt %d/%d",
+                attempt,
+                max_attempts
+            )
+
+            return gemini_client.models.generate_content(**kwargs)
+
+        except Exception as exc:
+            status_code = getattr(exc, "code", None)
+
+            retryable_codes = {408, 429, 500, 502, 503, 504}
+
+            if status_code not in retryable_codes:
+                raise
+
+            if attempt == max_attempts:
+                log.error(
+                    "Gemini failed after %d attempts: %s",
+                    max_attempts,
+                    exc
+                )
+                raise
+
+            wait_seconds = min(5 * (2 ** (attempt - 1)), 60)
+
+            log.warning(
+                "Gemini returned HTTP %s. Retrying in %d seconds.",
+                status_code,
+                wait_seconds
+            )
+
+            time.sleep(wait_seconds)
+
+    raise RuntimeError("Gemini request failed after all retry attempts.")
+    
 def build_editorial_report(news_items, social_items, competitors):
     if not news_items and not social_items:
         raise RuntimeError("No recent source items collected. Refusing to send an empty report.")
@@ -230,7 +270,7 @@ def build_editorial_report(news_items, social_items, competitors):
         "\n\nDATA:\n" + json.dumps(input_data, ensure_ascii=False)
     )
 
-    response = gemini_client.models.generate_content(
+    response = generate_content_with_retry(
         model=GEMINI_MODEL,
         contents=user_prompt,
         config=types.GenerateContentConfig(
