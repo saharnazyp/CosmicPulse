@@ -1,39 +1,55 @@
-name: Cosmic Pulse Daily Editorial Briefing
+name: CosmicPulse 2.0 Daily Autopilot
 
 on:
   workflow_dispatch:
   schedule:
-    # 05:30 UTC = 09:00 Tehran time (UTC+3:30)
+    # 05:30 UTC = 09:00 Tehran (UTC+3:30)
     - cron: "30 5 * * *"
 
 permissions:
-  contents: read
+  contents: write
+
+concurrency:
+  group: cosmicpulse-daily
+  cancel-in-progress: false
 
 jobs:
-  daily-briefing:
+  daily-autopilot:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+          persist-credentials: true
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          cache: "pip"
+          cache: pip
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Generate and send briefing
+      - name: Validate Python modules
+        run: python -m compileall -q main.py cosmicpulse
+
+      - name: Run CosmicPulse autopilot
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GEMINI_MODEL: gemini-3.8-flash
-          MAX_AGE_HOURS: "72"
-          MAX_CANDIDATES: "70"
+          MAX_AGE_HOURS: "48"
+          MAX_ITEMS_PER_FEED: "20"
+          MAX_CANDIDATES: "80"
+          MAX_NEWS_POSTS: "4"
+          MAX_EDUCATIONAL_POSTS: "1"
+          STATE_PATH: state/state.json
+          FEEDS_PATH: config/feeds.json
         run: python main.py
