@@ -95,6 +95,29 @@ def publish_educational(post, index):
     if post.get("visual_prompt_en"):
         send_text("🎨 <b>Visual prompt</b>\n<code>" + esc(post["visual_prompt_en"][:2500]) + "</code>")
 
+def _watchlist_text(item):
+    """Normalize model-generated watchlist strings and structured objects."""
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        for key in ("title", "topic", "event", "name", "text", "description"):
+            value = item.get(key)
+            if isinstance(value, str) and value.strip():
+                detail = item.get("reason") or item.get("why_it_matters")
+                if isinstance(detail, str) and detail.strip() and detail.strip() != value.strip():
+                    return value.strip() + " — " + detail.strip()
+                return value.strip()
+        values = [
+            str(value).strip()
+            for value in item.values()
+            if isinstance(value, (str, int, float)) and str(value).strip()
+        ]
+        return "، ".join(values[:3])
+    if item is None:
+        return ""
+    return str(item).strip()
+
+
 def publish_package(package, news_count, social_count):
     header = (
         "🌌 <b>CosmicPulse 2.0 | نبض کیهان</b>\n"
@@ -108,6 +131,8 @@ def publish_package(package, news_count, social_count):
     for i, post in enumerate(package.get("educational_posts", []), 1):
         publish_educational(post, i)
     watch = package.get("watchlist") or []
-    if watch:
-        send_text("🔭 <b>در رصد روزهای آینده</b>\n" + esc("\n".join("• " + x for x in watch[:6])))
+    watch_items = [_watchlist_text(item) for item in watch]
+    watch_items = [item for item in watch_items if item][:6]
+    if watch_items:
+        send_text("🔭 <b>در رصد روزهای آینده</b>\n" + esc("\n".join("• " + item for item in watch_items)))
     send_text("✨ <i>CosmicPulse | کنجکاوی، تا بی‌نهایت.</i>")
